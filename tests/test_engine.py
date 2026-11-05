@@ -1,5 +1,3 @@
-"""Step 0: cache surgery must be exact before any experiment result means anything."""
-
 import pytest
 import torch
 

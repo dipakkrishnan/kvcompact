@@ -1,5 +1,3 @@
-"""Model and KV cache with logical positions kept separate from physical cache slots."""
-
 from dataclasses import dataclass
 
 import torch

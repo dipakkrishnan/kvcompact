@@ -1,5 +1,3 @@
-"""Replay real transcripts: cut at the limit, compact with each method, score the true continuation."""
-
 import argparse
 import json
 from pathlib import Path

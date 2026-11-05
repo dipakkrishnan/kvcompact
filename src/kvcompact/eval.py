@@ -1,5 +1,3 @@
-"""Scoring and paired comparison across sessions."""
-
 import random
 from dataclasses import dataclass
 

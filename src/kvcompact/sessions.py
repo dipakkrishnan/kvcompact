@@ -1,5 +1,3 @@
-"""Load agent transcripts and render them into the subject model's chat template."""
-
 import json
 from dataclasses import dataclass
 from pathlib import Path

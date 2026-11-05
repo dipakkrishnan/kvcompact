@@ -1,5 +1,3 @@
-"""Compaction methods. Each turns a full session cache into one that fits a budget of `budget` slots."""
-
 from typing import Protocol
 
 import torch
