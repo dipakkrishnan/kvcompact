@@ -1,0 +1,13 @@
+{
+  "name": "kvcompact-pi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pi": "pi",
+    "typecheck": "tsc --noEmit -p .pi/extensions/kvcompact"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "0.70.2",
+    "typescript": "5.9.3"
+  }
+}

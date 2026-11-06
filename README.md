@@ -1,31 +1,36 @@
 # kvcompact
 
-When a session hits its context limit, does a compactor that edits the model's KV cache keep more of what the
-rest of the session needs than one that writes a summary, at the same memory budget? See `docs/plan.md`.
+An open-weight model runs a coding session in Pi. When its context fills up, does the agent do better if a
+frontier advisor edits its KV cache instead of writing a summary? See `docs/plan.md`.
 
-## Yours (the fun parts)
+## Yours
 
-| Stub | Spec |
-|---|---|
-| `SessionCache.keep` (`src/kvcompact/engine.py`) | `tests/test_engine.py` |
-| `Engine.forward`: logical positions + your own 4D causal mask | `tests/test_engine.py` |
-| `SnapKV.compact` (`src/kvcompact/methods.py`) | arXiv:2404.14469 |
-| `KVAgent.compact`: the kernel compactor | `docs/plan.md` |
+| Stub | Where | Spec |
+|---|---|---|
+| `SessionCache.keep`, `Engine.forward` | `src/kvcompact/engine.py` | `tests/test_engine.py` (step 0) |
+| `expand`, `render`, `sync`, `parse` | `src/kvcompact/server.py` | docstrings |
+| `KernelAdvisor.compact` | `src/kvcompact/advisor.py` | `docs/plan.md` |
 
-The six engine tests fail until `keep` and `forward` exist. They are step 0: nothing downstream means anything
-until they pass.
+## Done
 
-## Done (the plumbing)
-
-- `sessions.py`: Claude Code JSONL to Qwen chat messages, turn starts, cut at the limit
-- `methods.py`: `Full`, `Recent`, `SummaryTail` (summary plus verbatim recent turns, re-prefilled)
-- `eval.py`: continuation NLL, excess NLL by distance, paired bootstrap over sessions, budget check
-- `replay.py`: `uv run kvcompact-replay ~/.claude/projects/<project>/<session>.jsonl --limit 32768 --budget 4096`
+- `server.py`: OpenAI-compatible `/v1/chat/completions` (streaming), `/compact`, `/health`, request log
+- `.pi/extensions/kvcompact/`: registers the `kvcompact` provider and swaps compaction per `KVCOMPACT_MODE`
+- `.pi/settings.json`: compaction fires at the limit, short verbatim tail
+- `RecentAdvisor`: keep the last B slots, for testing the loop before the kernel advisor exists
 
 ## Run
 
 ```bash
-uv sync
-uv run pytest            # tests marked `model` download Qwen3-0.6B (~1.5 GB) on first run
-uv run pytest -m "not model"
+uv sync && npm install
+uv run pytest                                    # engine tests; download Qwen3-0.6B on first run
+
+# server (small model for plumbing; the 30B on RunPod for real runs)
+uv run kvcompact-serve --model Qwen/Qwen3-0.6B --dtype float32 --advisor recent --budget 1024
+
+# agent: KVCOMPACT_MODE = kv | summary | none; KVCOMPACT_LIMIT sets where compaction fires
+KVCOMPACT_MODE=kv KVCOMPACT_LIMIT=2048 npx pi --model kvcompact/qwen3-coder
+npm run typecheck                                # the extension
 ```
+
+The `summary` arm needs Anthropic credentials in Pi (`/login`, or `ANTHROPIC_API_KEY`). Pi prints
+`[kvcompact] ...` to stderr on every compaction; a `FAILED` line means that run is invalid.

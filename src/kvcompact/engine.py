@@ -30,6 +30,7 @@ class SessionCache:
 
 class Engine:
     def __init__(self, model_id: str, device: str = "cpu", dtype: torch.dtype = torch.float32, attn: str = "eager"):
+        self.name = model_id
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
         self.model = AutoModelForCausalLM.from_pretrained(model_id, dtype=dtype, attn_implementation=attn).to(device)
         self.model.eval()
@@ -54,14 +55,12 @@ class Engine:
         """
         raise NotImplementedError
 
-    def nll(self, session: SessionCache, ids: torch.Tensor) -> torch.Tensor:
-        """Per-token negative log-likelihood of ids[1:] after `session` and ids[0]."""
-        logits, _ = self.forward(session, ids)
-        logp = logits[:, :-1].float().log_softmax(-1)
-        return -logp.gather(-1, ids[:, 1:, None].to(logp.device)).squeeze(-1)
+    def generate(self, session: SessionCache, ids: torch.Tensor, max_new: int) -> tuple[list[int], SessionCache]:
+        """Greedy decode after `session` + `ids`, stopping at end of turn.
 
-    def generate(self, session: SessionCache, ids: torch.Tensor, max_new: int) -> list[int]:
-        """Greedy decode after `session` + `ids`, stopping at end of turn."""
+        Returns (generated ids, grown session). The session holds `ids` plus every generated id; the stop token
+        itself is not forwarded, so the next request's render supplies `<|im_end|>` like any other new token.
+        """
         stop = {self.tokenizer.convert_tokens_to_ids(t) for t in ("<|im_end|>", "<|endoftext|>")}
         logits, session = self.forward(session, ids)
         out: list[int] = []
@@ -71,4 +70,4 @@ class Engine:
                 break
             out.append(token)
             logits, session = self.forward(session, torch.tensor([[token]]))
-        return out
+        return out, session

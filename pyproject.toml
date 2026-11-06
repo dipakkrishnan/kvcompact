@@ -1,15 +1,17 @@
 [project]
 name = "kvcompact"
 version = "0.1.0"
-description = "KV-cache compaction vs summary compaction at the context limit"
+description = "Advisor-driven KV-cache surgery vs summary compaction for a live coding agent"
 readme = "README.md"
 authors = [
     { name = "Dipak Krishnan" }
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.115",
     "torch==2.*",
     "transformers>=5.22.1",
+    "uvicorn>=0.32",
 ]
 
 [build-system]
@@ -17,7 +19,7 @@ requires = ["uv_build>=0.12.22,<0.13.0"]
 build-backend = "uv_build"
 
 [project.scripts]
-kvcompact-replay = "kvcompact.replay:main"
+kvcompact-serve = "kvcompact.server:main"
 
 [tool.pytest.ini_options]
 markers = ["model: needs the Qwen3-0.6B weights (downloaded on first run)"]
